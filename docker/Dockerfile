@@ -1,10 +1,14 @@
 # How to setup
 #
 # Build docker image
+# cd docker
 # docker build . --build-arg UID="`id -u`"  --build-arg GID="`id -g`" -t humble
 #
 # How to Run
-# docker run -it humble bash
+# docker run -it --rm -v $PWD/dev_ws:/home/user/dev_ws --env="DISPLAY" --name humble -v /tmp/.X11-unix:/tmp/.X11-unix:rw humble bash
+#
+# How to Exec
+# docker exec -it humble bash
 
 
 FROM gezp/ubuntu-desktop-ros:humble-gazebo-fortress
@@ -15,6 +19,8 @@ ARG UID=1000
 ARG GID=1000
 
 ENV ROS_DISTRO=humble
+
+SHELL ["/bin/bash", "-c"]
 
 RUN apt-key del C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN curl -sS https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
@@ -33,15 +39,17 @@ RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyri
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
 RUN apt-get update && apt-get install -y \
     ignition-fortress \
-    ros-humble-ros-gz-bridge
-
-RUN apt-get update && apt-get install -y \
+    ros-humble-ros-gz-bridge \
+    ros-humble-slam-toolbox \
+    ros-humble-navigation2 \
+    ros-humble-ros-ign \
+    ros-humble-joint-state-publisher \
+    ros-humble-joint-state-publisher-gui \
+    x11-apps \
     python3-flake8-docstrings \
     python3-pip \
     python3-pytest-cov \
-    ros-dev-tools
-
-RUN apt-get install -y \
+    ros-dev-tools \
     python3-flake8-blind-except \
     python3-flake8-builtins \
     python3-flake8-class-newline \
@@ -50,7 +58,9 @@ RUN apt-get install -y \
     python3-flake8-import-order \
     python3-flake8-quotes \
     python3-pytest-repeat \
-    python3-pytest-rerunfailures
+    python3-pytest-rerunfailures \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid $GID $USERNAME \
     && useradd --uid $UID --gid $GID -m $USERNAME \
@@ -60,6 +70,11 @@ RUN groupadd --gid $GID $USERNAME \
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
+WORKDIR /home/$USERNAME/dev_ws
 USER $USERNAME
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
+
+RUN source "/opt/ros/${ROS_DISTRO}/setup.bash"
+RUN rosdep update
+
 CMD ["bash"]

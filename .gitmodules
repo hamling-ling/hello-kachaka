@@ -1,0 +1,3 @@
+[submodule "dev_ws/src/kachaka_ros2_dev_kit"]
+	path = dev_ws/src/kachaka_ros2_dev_kit
+	url = git@github.com:CyberAgentAILab/kachaka_ros2_dev_kit.git
